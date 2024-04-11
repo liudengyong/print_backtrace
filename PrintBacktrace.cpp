@@ -2,7 +2,7 @@
  * @ Author: liudengyong
  * @ Create Time: 2024-04-11 13:45:53
  * @ Modified by: liudengyong
- * @ Modified time: 2024-04-11 16:52:04
+ * @ Modified time: 2024-04-11 18:29:12
  * @ Description: Print backtrace info for debug
  */
 
@@ -17,6 +17,7 @@
 
 namespace dy {
 
+    // 获取进程名称
     static std::string getProcessName() {
         std::string processName;
         std::ifstream file("/proc/self/cmdline");
@@ -27,6 +28,7 @@ namespace dy {
         return processName;
     }
 
+    // 获取线程名称
     static std::string getThreadName() {
         std::string threadName;
         char path[256];
@@ -45,10 +47,8 @@ namespace dy {
 
     // 转可读符号名
     static std::string demangle(const char* str) {
-        size_t size = 0;
-        int status = 0;
+        char* tmp = abi::__cxa_demangle(str, nullptr, nullptr, nullptr);
 
-        char* tmp = abi::__cxa_demangle(str, nullptr, &size, &status);
         if (tmp != nullptr) {
             std::string result(tmp);
             free(tmp);
@@ -79,9 +79,25 @@ namespace dy {
         return "";
     }
 
+    // 获取可读类型名称
     std::string get_type_name(const std::type_info& info) {
         std::string name = info.name();
         return demangle(name.c_str());
+    }
+
+    // 生成当前时间戳文件名（如20240411_182710_11.backtrace，下划线分割开日期，时间和信号）
+    std::string gen_filename_with_cur_ts(int sig) {
+        time_t t = std::time(nullptr);
+        struct tm* now = std::localtime(&t);
+        char formatedTime[50];
+        strftime(formatedTime, sizeof(formatedTime), "%Y%m%d_%H%M%S", now);
+
+        std::string fileName = formatedTime;
+        if (sig != 0) {
+            fileName += "_" + std::to_string(sig);
+        }
+
+        return fileName + ".backtrace";
     }
 
     // 打印堆栈到文件

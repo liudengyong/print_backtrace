@@ -6,19 +6,10 @@ project(print_backtrace)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 警告即错误
 add_definitions(-Werror)
 
-# add_compile_definitions(MSGPACK_NO_BOOST)
-
-# 警告即错误
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
-
-set(CMAKE_BUILD_TYPE Debug)
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
-# add_definitions(-g)
-# add_definitions(-rdynamic)
+set(CMAKE_BUILD_TYPE Release)
 
 include_directories(include)
 
