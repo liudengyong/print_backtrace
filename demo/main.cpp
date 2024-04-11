@@ -1,10 +1,3 @@
-# print_backtrace
-
-C++版本的PrintStacktrace。可以在C++代码中打印堆栈信息。
-
-demo代码：
-
-```C++
 /**
  * @ Author: liudengyong
  * @ Create Time: 2024-04-11 13:45:42
@@ -65,4 +58,3 @@ int main(int32_t argc, char const *argv[]) {
 
     return 0;
 }
-```
