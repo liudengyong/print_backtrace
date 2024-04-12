@@ -13,15 +13,11 @@ demo代码：
  * @ Author: liudengyong
  * @ Create Time: 2024-04-11 13:45:42
  * @ Modified by: liudengyong
- * @ Modified time: 2024-04-11 18:18:23
+ * @ Modified time: 2024-04-12 09:57:41
  * @ Description: PrinitBacktrace demo
  */
 
 #include "PrintBacktrace.h"
-
-#include <fstream>
-#include <signal.h>
-#include <ctime>
 
 namespace ns {
     class A {
@@ -46,30 +42,9 @@ void testPrintBacktrace() {
     std::cout << tmp[0] << std::endl;
 }
 
-// SIGSEGV/SIGABRT 信号处理程序
-static void sigHandler(int sig) {
-    std::string fileName = dy::gen_filename_with_cur_ts();
-    std::ofstream file(fileName);
-    std::cout << "Print backtrace to file: " << fileName << std::endl;
-    if (file.is_open()) {
-        dy::print_backtrace(file);
-        file.close();
-    }
-
-    exit(sig);
-}
-
-// 注册 SIGSEGV/SIGABRT 信号处理程序
-static void registerSigHandler() {
-    struct sigaction action{};
-    action.sa_handler = sigHandler;
-    sigaction(SIGSEGV, &action, NULL);
-    sigaction(SIGABRT, &action, NULL);
-}
-
 int main(int32_t argc, char const *argv[]) {
     // 注册 SIGSEGV/SIGABRT 信号处理程序
-    registerSigHandler();
+    dy::register_sig_handler("logs", {SIGSEGV, SIGABRT});
 
     // 测试打印堆栈信息
     testPrintBacktrace();

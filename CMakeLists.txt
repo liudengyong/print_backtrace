@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.15)
 # 设置编译目标名称
 project(print_backtrace)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 警告即错误
 add_definitions(-Werror)
@@ -19,6 +19,7 @@ set(SRC_LIST
 
 # 生成动态库
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST})
+target_link_libraries(${PROJECT_NAME} PUBLIC -lstdc++fs)
 
 # 安装库
 install(TARGETS ${PROJECT_NAME}

@@ -2,7 +2,7 @@
  * @ Author: liudengyong
  * @ Create Time: 2024-04-11 13:45:53
  * @ Modified by: liudengyong
- * @ Modified time: 2024-04-11 18:29:12
+ * @ Modified time: 2024-04-12 11:18:09
  * @ Description: Print backtrace info for debug
  */
 
@@ -12,10 +12,43 @@
 #include <cxxabi.h>
 #include <fstream>
 #include <regex>
+#include <sys/stat.h>
 #include <typeinfo>
 #include <unistd.h>
 
+#if __cplusplus > 201703L
+    #include <filesystem>
+#else
+    #include <experimental/filesystem>
+    namespace fs = std::experimental::filesystem;
+#endif
+
 namespace dy {
+
+    // 日志标签
+    const char* TAG = "[PrintBacktrace] ";
+
+    // 文件夹是否存在
+    static bool folderExists(const std::string& dir) {
+        struct stat info;
+        if (stat(dir.c_str(), &info) != 0) {
+            return false;
+        }
+        return (info.st_mode & S_IFDIR);
+    }
+
+    // 创建文件夹
+    static bool mkdir(const std::string& dir) {
+        if (!folderExists(dir)) {
+            try {
+                fs::create_directory(dir);
+            } catch (const std::exception& e) {
+                std::cerr << TAG << "Failed to create dir " << dir << " : " << e.what() << std::endl;
+                return false;
+            }
+        }
+        return true;
+    }
 
     // 获取进程名称
     static std::string getProcessName() {
@@ -103,7 +136,7 @@ namespace dy {
     // 打印堆栈到文件
     void print_backtrace(std::ostream& of, const int max_frame, const char* time, const char* date) {
         // TODO 待开放参数
-        const char* prifix = "[print_backtrace]";
+        const char* prifix = TAG;
         const int skip_frame = 1;
 
         // assert(skip_frame < max_frame);
@@ -113,7 +146,7 @@ namespace dy {
         char **strs = backtrace_symbols(buf, size);
 
         if (strs != nullptr) {
-            of << prifix << " <" << getProcessName() << "/" << getThreadName() << "> compile time " << time << " " << date << std::endl;
+            of << prifix << "<" << getProcessName() << "/" << getThreadName() << "> compile time " << time << " " << date << std::endl;
 
             for (int i = skip_frame; i < size; i++) {
                 std::string frame = strs[i];
@@ -128,13 +161,54 @@ namespace dy {
                     frame = frame.replace(startPos, endPos - startPos, readableSym);
                 }
 
-                of << prifix << " " << frame << std::endl;
+                of << prifix << frame << std::endl;
             }
 
             free(strs);
         } else {
             perror("No backtrace symbols");
         }
+    }
+
+    // 日志目录
+    static std::string logDir;
+
+    // SIGSEGV/SIGABRT 信号处理程序
+    static void sigHandler(int sig) {
+        std::string fileName = logDir + "/" + gen_filename_with_cur_ts();
+        std::ofstream file(fileName);
+        std::cout << TAG << "Print backtrace to file: " << fileName << std::endl;
+        if (file.is_open()) {
+            dy::print_backtrace(file);
+            file.close();
+        }
+
+        exit(sig);
+    }
+
+    // 注册 SIGSEGV/SIGABRT 信号处理程序
+    bool register_sig_handler(std::string log_dir, std::vector<int> signals) {
+        std::cout << TAG << "Register signal handler, C++ version " << __cplusplus << std::endl;
+
+        if (signals.size() == 0) {
+            std::cerr << TAG << "Register signal handler failed : no signal is specified !" << std::endl;
+            return false;
+        }
+
+        if (!mkdir(log_dir)) {
+            std::cerr << TAG << "Register signal handler failed : cannt create log dir : " << log_dir << " !" << std::endl;
+            return false;
+        }
+
+        logDir = log_dir;
+
+        struct sigaction action{};
+        action.sa_handler = sigHandler;
+        for (auto sig : signals) {
+            sigaction(sig, &action, NULL);
+        }
+
+        return true;
     }
 
 }
