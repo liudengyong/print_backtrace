@@ -15,6 +15,7 @@ include_directories(include)
 
 set(SRC_LIST
     PrintBacktrace.cpp
+    PrintBacktraceUtils.cpp
 )
 
 # 生成动态库
