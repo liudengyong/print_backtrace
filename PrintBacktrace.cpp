@@ -2,11 +2,12 @@
  * @ Author: liudengyong
  * @ Create Time: 2024-04-11 13:45:53
  * @ Modified by: liudengyong
- * @ Modified time: 2024-04-12 11:45:18
+ * @ Modified time: 2024-04-12 17:02:09
  * @ Description: Print backtrace info for debug
  */
 
 #include "PrintBacktrace.h"
+#include "Log.h"
 
 #include <execinfo.h>
 #include <fstream>
@@ -14,8 +15,7 @@
 
 namespace dy {
 
-    // 日志标签
-    const char* TAG = "[PrintBacktrace] ";
+    using namespace logger;
 
     // 提取括号中的+前面的符号
     static std::string subSym(std::string input) {
@@ -49,29 +49,30 @@ namespace dy {
         int size = backtrace(buf, sizeof(buf));
         char **strs = backtrace_symbols(buf, size);
 
-        if (strs != nullptr) {
-            of << TAG << "<" << get_process_name() << "/" << get_thread_name() << "> compile time " << time << " " << date << std::endl;
+        if (strs == nullptr) {
+            perror("No backtrace symbols");
+            return;
+        }
 
-            for (int i = skip_frame; i < size; i++) {
-                std::string frame = strs[i];
-                // /map/bev/yhlib/libyh_bev_cam_perception.so(_ZN14HrzJ5DNNEngine6DeInitEv+0x14) [0xffffa92b1a64]
-                // /map/bev/yhlib/libyh_bev_cam_perception.so(HrzJ5DNNEngine::DeInit()+0x14) [0xffffa92b1a64]
+        of << get_tag() << " <" << get_process_name() << "/" << get_thread_name() << "> compile time " << time << " " << date << std::endl;
 
-                std::string sym = subSym(frame);
-                if (sym.size() > 0) {
-                    std::string readableSym = demangle(sym.c_str());
-                    size_t startPos = frame.find(sym);
-                    size_t endPos = frame.find("+", startPos);
-                    frame = frame.replace(startPos, endPos - startPos, readableSym);
-                }
+        for (int i = skip_frame; i < size; i++) {
+            std::string frame = strs[i];
+            // /map/bev/yhlib/libyh_bev_cam_perception.so(_ZN14HrzJ5DNNEngine6DeInitEv+0x14) [0xffffa92b1a64]
+            // /map/bev/yhlib/libyh_bev_cam_perception.so(HrzJ5DNNEngine::DeInit()+0x14) [0xffffa92b1a64]
 
-                of << TAG << frame << std::endl;
+            std::string sym = subSym(frame);
+            if (sym.size() > 0) {
+                std::string readableSym = demangle(sym.c_str());
+                size_t startPos = frame.find(sym);
+                size_t endPos = frame.find("+", startPos);
+                frame = frame.replace(startPos, endPos - startPos, readableSym);
             }
 
-            free(strs);
-        } else {
-            perror("No backtrace symbols");
+            of << get_tag() << " " << frame << std::endl;
         }
+
+        free(strs);
     }
 
     // 日志目录
@@ -81,7 +82,9 @@ namespace dy {
     static void sigHandler(int sig) {
         std::string fileName = logDir + "/" + gen_filename_with_cur_ts();
         std::ofstream file(fileName);
-        std::cout << TAG << "Print backtrace to file: " << fileName << std::endl;
+
+        log_i("Print backtrace to file: %s", fileName.c_str());
+
         if (file.is_open()) {
             dy::print_backtrace(file);
             file.close();
@@ -92,15 +95,15 @@ namespace dy {
 
     // 注册 SIGSEGV/SIGABRT 信号处理程序
     bool register_sig_handler(std::string log_dir, std::vector<int> signals) {
-        std::cout << TAG << "Register signal handler, C++ version " << __cplusplus << std::endl;
+        log_i("Register signal handler, C++ version %ld", __cplusplus);
 
         if (signals.size() == 0) {
-            std::cerr << TAG << "Register signal handler failed : no signal is specified !" << std::endl;
+            log_e("Register signal handler failed : no signal is specified !");
             return false;
         }
 
         if (!mkdir(log_dir)) {
-            std::cerr << TAG << "Register signal handler failed : cannt create log dir : " << log_dir << " !" << std::endl;
+            log_e("Register signal handler failed : cannt create log dir : %s !", log_dir.c_str());
             return false;
         }
 

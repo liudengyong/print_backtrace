@@ -2,15 +2,15 @@
  * @ Author: liudengyong
  * @ Create Time: 2024-04-12 11:32:44
  * @ Modified by: liudengyong
- * @ Modified time: 2024-04-12 11:42:39
+ * @ Modified time: 2024-04-12 16:40:05
  * @ Description: Print backtrace utils
  */
 
 #include "PrintBacktraceUtils.h"
+#include "Log.h"
 
 #include <cxxabi.h>
 #include <fstream>
-#include <iostream>
 #include <sys/stat.h>
 #include <typeinfo>
 #include <unistd.h>
@@ -23,6 +23,8 @@
 #endif
 
 namespace dy {
+
+    using namespace logger;
 
     // 文件夹是否存在
     static bool folderExists(const std::string& dir) {
@@ -39,7 +41,7 @@ namespace dy {
             try {
                 fs::create_directory(dir);
             } catch (const std::exception& e) {
-                std::cerr << "Failed to create dir " << dir << " : " << e.what() << std::endl;
+                log_e("Failed to create dir %s : %s", dir.c_str(), e.what());
                 return false;
             }
         }
