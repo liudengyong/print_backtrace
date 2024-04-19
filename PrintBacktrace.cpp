@@ -2,7 +2,7 @@
  * @ Author: liudengyong
  * @ Create Time: 2024-04-11 13:45:53
  * @ Modified by: liudengyong
- * @ Modified time: 2024-04-12 17:02:09
+ * @ Modified time: 2024-04-19 13:42:27
  * @ Description: Print backtrace info for debug
  */
 
@@ -86,6 +86,8 @@ namespace dy {
         log_i("Print backtrace to file: %s", fileName.c_str());
 
         if (file.is_open()) {
+            // 获取 SIGINT 信号的名称
+            file << "Receive signal " << sig << " - " << strsignal(sig) << std::endl;
             dy::print_backtrace(file);
             file.close();
         }
